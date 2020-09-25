@@ -2,6 +2,6 @@
 
 namespace IsakzhanovR\Menus\Traits;
 
-trait HasWrapperAttributes
+trait HasHtmlWrappers
 {
 }

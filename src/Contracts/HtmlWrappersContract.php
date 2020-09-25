@@ -2,6 +2,6 @@
 
 namespace IsakzhanovR\Menus\Contracts;
 
-interface WrapperAttributesContract
+interface HtmlWrappersContract
 {
 }
