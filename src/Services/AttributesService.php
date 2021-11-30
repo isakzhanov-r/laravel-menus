@@ -4,13 +4,13 @@ namespace IsakzhanovR\Menus\Services;
 
 use IsakzhanovR\Menus\Contracts\HtmlAttributesContract;
 
-final class HtmlAttributesService implements HtmlAttributesContract
+final class AttributesService implements HtmlAttributesContract
 {
-    protected $attributes;
+    protected array $attributes = [];
 
     public function __construct(array $attributes = [])
     {
-        $this->attributes = $attributes;
+        $this->addAttributes($attributes);
     }
 
     public function addAttributes(...$attributes)
@@ -33,7 +33,7 @@ final class HtmlAttributesService implements HtmlAttributesContract
 
     public function addAttribute(string $name, string $value = '')
     {
-        if (! $this->exists($name)) {
+        if (!$this->exists($name)) {
             $this->attributes[$name] = [$value];
 
             return $this;
@@ -41,6 +41,40 @@ final class HtmlAttributesService implements HtmlAttributesContract
         $this->mergeAttributes($name, $value);
 
         return $this;
+    }
+
+    public function toString(): string
+    {
+        if ($this->isEmpty()) {
+            return '';
+        }
+
+        $attributeStrings = [];
+
+        foreach ($this->attributes as $attribute => $value) {
+            if (is_null($value) || $value === '') {
+                $attributeStrings[] = $attribute;
+
+                continue;
+            }
+            if (is_array($value)) {
+                $value = implode(' ', $value);
+            }
+
+            $attributeStrings[] = "{$attribute}=\"{$value}\"";
+        }
+
+        return implode(' ', $attributeStrings);
+    }
+
+    public function __toString()
+    {
+        return $this->toString();
+    }
+
+    protected function isEmpty(): bool
+    {
+        return empty($this->attributes);
     }
 
     protected function exists($name)
