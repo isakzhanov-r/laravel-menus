@@ -1,7 +1,7 @@
 {
     "name": "isakzhanov-r/laravel-menus",
-    "description": "Package for using user roles and permissions in project laravel",
-    "keywords": ["laravel", "permissions", "user roles", "model permission", "user permissions", "roles permissions"],
+    "description": "Package for using menu construct in project laravel",
+    "keywords": ["menu", "laravel menu"],
     "type": "library",
     "license": "MIT",
     "support": {
@@ -16,7 +16,6 @@
         }
     ],
     "require": {
-        "ext-http": "*",
         "php": "^7.4|^8.0",
         "doctrine/dbal": "^2.6",
         "illuminate/support": "^7.0|^8.0"
