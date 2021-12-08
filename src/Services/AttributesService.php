@@ -34,13 +34,34 @@ final class AttributesService implements HtmlAttributesContract
     public function addAttribute(string $name, string $value = '')
     {
         if (!$this->exists($name)) {
-            $this->attributes[$name] = [$value];
+            $this->attributes[$name] = $value;
 
             return $this;
         }
+
         $this->mergeAttributes($name, $value);
 
         return $this;
+    }
+
+    public function toArray()
+    {
+        $attributes = [];
+
+        foreach ($this->attributes as $attribute => $value) {
+            if (is_null($value) || $value === '') {
+                $attributes[] = $attribute;
+
+                continue;
+            }
+            if (is_array($value)) {
+                $value = implode(' ', $value);
+            }
+
+            $attributes[$attribute] = $value;
+        }
+
+        return $attributes;
     }
 
     public function toString(): string
@@ -72,18 +93,20 @@ final class AttributesService implements HtmlAttributesContract
         return $this->toString();
     }
 
-    protected function isEmpty(): bool
+    public function isEmpty(): bool
     {
         return empty($this->attributes);
     }
 
-    protected function exists($name)
+    public function exists($name)
     {
         return array_key_exists($name, $this->attributes);
     }
 
     protected function mergeAttributes(string $name, string $value)
     {
-        $this->attributes[$name] = array_merge($this->attributes[$name], [$value]);
+        $values = (array) $this->attributes[$name];
+
+        $this->attributes[$name] = array_unique(array_merge($values, [$value]));
     }
 }
