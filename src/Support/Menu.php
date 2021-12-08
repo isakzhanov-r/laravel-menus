@@ -3,15 +3,16 @@
 namespace IsakzhanovR\Menus\Support;
 
 use Closure;
-use http\Exception\BadMethodCallException;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Str;
 use IsakzhanovR\Menus\Contracts\AppendedContract;
-use IsakzhanovR\Menus\Services\HtmlAttributesService;
+use IsakzhanovR\Menus\Helpers\Config;
+use IsakzhanovR\Menus\Helpers\Tag;
+use IsakzhanovR\Menus\Services\AttributesService;
+use IsakzhanovR\Menus\Services\WrappersService;
+use IsakzhanovR\Menus\Traits\ConditionalMethod;
 use IsakzhanovR\Menus\Traits\HasHtmlAttributes;
-use ReflectionMethod;
+use IsakzhanovR\Menus\Traits\HasHtmlWrappers;
+use IsakzhanovR\Menus\Traits\HasParentAttributes;
 
 /**
  * @method $this addIf(callable | bool $conditional, AppendedContract $item)
@@ -26,11 +27,14 @@ use ReflectionMethod;
  * @method $this renderIf(callable | bool $conditional)
  * @method $this storeIf(callable | bool $conditional)
  *
- * @see methodIf
+ * @see ConditionalMethod.methodIf
  */
 class Menu implements AppendedContract
 {
+    use ConditionalMethod;
     use HasHtmlAttributes;
+    use HasParentAttributes;
+    use HasHtmlWrappers;
 
     /**
      * @var string
@@ -38,14 +42,17 @@ class Menu implements AppendedContract
     protected $menu;
 
     /**
-     * @var array|\Illuminate\Support\Collection
-     */
-    protected $items = [];
-
-    /**
      * @var array
      */
-    protected HtmlAttributesService $htmlAttributes;
+    protected array $items = [];
+
+    protected AttributesService $htmlAttributes;
+
+    protected AttributesService $parentAttributes;
+
+    protected WrappersService $htmlWrappers;
+
+    protected $options;
 
     /**
      * @var array
@@ -54,11 +61,20 @@ class Menu implements AppendedContract
 
     public function __construct($name = null)
     {
-        $this->menu           = $name;
-        $this->items          = new Collection();
-        $this->htmlAttributes = new HtmlAttributesService();
+        $this->menu             = $name;
+        $this->parentAttributes = new AttributesService();
+        $this->htmlAttributes   = new AttributesService();
+        $this->htmlWrappers     = new WrappersService();
+        $this->options          = Config::instance($name);
+        $this->bootOptions();
     }
 
+    /**
+     * @param string $name
+     * @param \Closure|null $callback
+     *
+     * @return \IsakzhanovR\Menus\Support\Menu|mixed
+     */
     public function make(string $name, Closure $callback = null)
     {
         if (is_null($callback)) {
@@ -70,11 +86,21 @@ class Menu implements AppendedContract
         return $this->collection[$name];
     }
 
-    public function generate($name, $items, Closure $callback)
+    /**
+     * @param string $name
+     * @param $items
+     * @param \Closure|null $callback
+     *
+     * @return $this|\IsakzhanovR\Menus\Support\Menu
+     */
+    public function generate(string $name, $items, Closure $callback = null)
     {
-
+        return $this->make($name)->fill($items, $callback);
     }
 
+    /**
+     * @return array
+     */
     public function all()
     {
         return $this->collection;
@@ -103,7 +129,10 @@ class Menu implements AppendedContract
      */
     public function add(AppendedContract $item)
     {
-        $this->items->push($item);
+        if ($item instanceof Item) {
+            $item->menu = $this->menu;
+        }
+        array_push($this->items, $item);
 
         return $this;
     }
@@ -125,7 +154,7 @@ class Menu implements AppendedContract
         }
         $href = URL::action($action, $parameters, $absolute);
 
-        return $this->add(Item::new($href, $title));
+        return $this->add(Item::new($href, $title, $this->menu));
     }
 
     /**
@@ -142,7 +171,7 @@ class Menu implements AppendedContract
     {
         $href = URL::to($path, $extra, $secure);
 
-        return $this->add(Item::new($href, $title));
+        return $this->add(Item::new($href, $title, $this->menu));
     }
 
     /**
@@ -159,7 +188,7 @@ class Menu implements AppendedContract
     {
         $href = URL::route($name, $parameters, $absolute);
 
-        return $this->add(Item::new($href, $title));
+        return $this->add(Item::new($href, $title, $this->menu));
     }
 
     /**
@@ -176,11 +205,6 @@ class Menu implements AppendedContract
         return $this->add(Html::new($html));
     }
 
-    public function fill()
-    {
-
-    }
-
     public function find(string $name)
     {
         if ($this->exists($name)) {
@@ -190,9 +214,15 @@ class Menu implements AppendedContract
         return $this->build($name);
     }
 
-    public function render()
+    public function render(): string
     {
+        $contents = array_map([$this, 'renderItem'], $this->items);
 
+        $content = Tag::withContent($contents, $this->options->get('wrapper_tag'), $this->htmlAttributes);
+
+        $tag = $this->htmlWrappers->renderBefore() . $content . $this->htmlWrappers->renderAfter();
+
+        return $this->htmlWrappers->renderWrap($tag);
     }
 
     public function store()
@@ -200,19 +230,38 @@ class Menu implements AppendedContract
         // TODO: Implement store() method.
     }
 
-    public function __call($name, $arguments)
+    public function setWrapperTag($value): self
     {
-        $method = Str::replace('If', '', $name);
+        $this->options->set('wrapper_tag', $value);
 
-        if (Str::contains($name, 'If') && method_exists($this, $method)) {
-            $condition = Arr::first($arguments);
+        return $this;
+    }
 
-            Arr::forget($arguments, [0]);
+    public function setParentTag($value): self
+    {
+        $this->options->set('parent_tag', $value);
 
-            return $this->methodIf($method, $condition, $arguments);
+        return $this;
+    }
+
+    /**
+     * @param array $items
+     *
+     * @return $this
+     */
+    protected function fill($items, callable $callback = null)
+    {
+        $menu = $this;
+
+        foreach ($items as $key => $item) {
+            if (is_callable($callback)) {
+                $menu = $callback($menu, $item, $key) ?: $menu;
+            } else {
+                $menu->link($key, $item);
+            }
         }
 
-        throw new BadMethodCallException("$name method not exist");
+        return $menu;
     }
 
     protected function exists(string $name): bool
@@ -230,26 +279,27 @@ class Menu implements AppendedContract
     }
 
     /**
-     * Add a chunk of menu if a (non-strict) condition is met.
+     * @param \IsakzhanovR\Menus\Contracts\AppendedContract | \IsakzhanovR\Menus\Support\Item|\IsakzhanovR\Menus\Support\Menu $item
      *
-     * @param $method
-     * @param $condition
-     * @param array $arguments
-     *
-     * @return mixed|void
-     * @throws \ReflectionException
+     * @return string
      */
-    protected function methodIf($method, $condition, array $arguments)
+    private function renderItem(AppendedContract $item)
     {
-        if ($this->resolveCondition($condition)) {
-            $method = new ReflectionMethod($this, $method);
-
-            return $method->invokeArgs($this, array_values($arguments));
+        if (!$item->isEmptyParentAttributes() && !$item instanceof Menu) {
+            $this->htmlAttributes->addAttributes($item->getParentAttributes());
         }
+
+        if ($item instanceof Menu) {
+            $item->wrap(
+                $item->htmlWrappers->getWrapTag(Config::instance($this->menu)->get('parent_tag')),
+                $item->getParentAttributes());
+        }
+
+        return $item->render();
     }
 
-    protected function resolveCondition($conditional)
+    private function bootOptions()
     {
-        return is_callable($conditional) ? $conditional() : $conditional;
+        $this->htmlAttributes->addAttribute('class', $this->options->get('menu_classes'));
     }
 }
