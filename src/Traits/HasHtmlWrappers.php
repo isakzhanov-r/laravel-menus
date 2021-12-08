@@ -4,26 +4,30 @@ namespace IsakzhanovR\Menus\Traits;
 
 trait HasHtmlWrappers
 {
-    public function wrap(string $element, array $attributes = [])
+    public function wrap(string $tag, array $attributes = [])
     {
-        $this->wrap($element, $attributes);
+        $this->htmlWrappers->wrap($tag, $attributes);
 
         return $this;
     }
 
     /**
-     * @param \IsakzhanovR\Menus\Contracts\AppendedContract|callable $item
+     * @param \IsakzhanovR\Menus\Contracts\AppendedContract|string $item
      */
     public function addBefore($item)
     {
+        $this->htmlWrappers->beforeHtml($item);
 
+        return $this;
     }
 
     /**
-     * @param \IsakzhanovR\Menus\Contracts\AppendedContract|callable $item
+     * @param \IsakzhanovR\Menus\Contracts\AppendedContract|string $item
      */
     public function addAfter($item)
     {
+        $this->htmlWrappers->afterHtml($item);
 
+        return $this;
     }
 }

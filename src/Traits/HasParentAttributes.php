@@ -6,7 +6,7 @@ use Illuminate\Support\Arr;
 
 trait HasParentAttributes
 {
-    public function addParentAttribute(string $name, string $value)
+    public function addParentAttribute(string $name, string $value = '')
     {
         $this->parentAttributes->addAttribute($name, $value);
 
@@ -27,5 +27,15 @@ trait HasParentAttributes
         }
 
         return $this;
+    }
+
+    public function getParentAttributes(): array
+    {
+        return $this->parentAttributes->toArray();
+    }
+
+    public function isEmptyParentAttributes(): bool
+    {
+        return $this->parentAttributes->isEmpty();
     }
 }
