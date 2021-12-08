@@ -1,0 +1,35 @@
+<div class="item">
+    <a href="/">Main</a>
+</div>
+<div class="item">
+    <a href="/about">About</a>
+</div>
+<div class="item">
+    <a href="/contacts">Contacts</a>
+</div>
+<div id="dropdown">
+    <nav class="menu dropdown-1">
+        <div class="item">
+            <a href="/">Main</a>
+        </div>
+        <div class="item">
+            <a href="/about">About</a>
+        </div>
+        <div class="item">
+            <a href="/contacts">Contacts</a>
+        </div>
+        <div class="subdropdown">
+            <ul class="menu about-3">
+                <li class="item">
+                    <a href="/">Main</a>
+                </li>
+                <li class="item">
+                    <a href="/about">About</a>
+                </li>
+                <li class="item">
+                    <a href="/contacts">Contacts</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+</div>

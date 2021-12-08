@@ -1,0 +1,14 @@
+<ul class="menu">
+    <li class="item">
+        <a href="/">Main</a>
+    </li>
+    <li class="item">
+        <a href="/about">About</a>
+    </li>
+    <li class="item">
+        <a href="/contacts">Contacts</a>
+    </li>
+    <li>
+        <a href="/html">HTML</a>
+    </li>
+</ul>

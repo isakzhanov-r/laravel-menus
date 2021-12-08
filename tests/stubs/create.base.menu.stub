@@ -1,0 +1,11 @@
+<ul class="menu">
+    <li class="item">
+        <a href="http://localhost">Main</a>
+    </li>
+    <li class="item">
+        <a href="http://localhost/about">About</a>
+    </li>
+    <li class="item">
+        <a href="http://localhost/contacts">Contacts</a>
+    </li>
+</ul>
