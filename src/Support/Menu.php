@@ -292,7 +292,7 @@ class Menu implements AppendedContract
         if ($item instanceof Menu) {
             $item->wrap(
                 $item->htmlWrappers->getWrapTag(Config::instance($this->menu)->get('parent_tag')),
-                $item->getParentAttributes());
+                array_merge($item->getParentAttributes(), ['class' => Config::instance($this->menu)->get('item_classes')]));
         }
 
         return $item->render();
