@@ -4,6 +4,7 @@ namespace IsakzhanovR\Menus\Support;
 
 use Closure;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
 use IsakzhanovR\Menus\Contracts\AppendedContract;
 use IsakzhanovR\Menus\Helpers\Config;
 use IsakzhanovR\Menus\Helpers\Tag;
@@ -225,9 +226,17 @@ class Menu implements AppendedContract
         return $this->htmlWrappers->renderWrap($tag);
     }
 
-    public function store()
+    public function store(): object
     {
-        // TODO: Implement store() method.
+        $array = [
+            'is_menu'    => true,
+            'menu'       => $this->menu,
+            'slug'       => Str::slug($this->menu),
+            'items'      => array_map([$this, 'storeItem'], $this->items),
+            'attributes' => $this->htmlAttributes->toArray(),
+        ];
+
+        return (object) $array;
     }
 
     public function setWrapperTag($value): self
@@ -249,7 +258,7 @@ class Menu implements AppendedContract
      *
      * @return $this
      */
-    protected function fill($items, callable $callback = null)
+    public function fill($items, callable $callback = null)
     {
         $menu = $this;
 
@@ -296,6 +305,15 @@ class Menu implements AppendedContract
         }
 
         return $item->render();
+    }
+
+    private function storeItem(AppendedContract $item)
+    {
+        if (!$item->isEmptyParentAttributes() && !$item instanceof Menu) {
+            $this->htmlAttributes->addAttributes($item->getParentAttributes());
+        }
+
+        return $item->store();
     }
 
     private function bootOptions()

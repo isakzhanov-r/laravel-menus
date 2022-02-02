@@ -2,8 +2,6 @@
 
 namespace IsakzhanovR\Menus;
 
-use IsakzhanovR\Menus\Support\Menu;
-
 class ServiceProvider extends \Illuminate\Support\ServiceProvider
 {
     public function boot()

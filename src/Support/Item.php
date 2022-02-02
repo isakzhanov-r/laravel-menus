@@ -64,7 +64,14 @@ class Item implements AppendedContract
 
     public function store()
     {
-        // TODO: Implement store() method.
+        $array = [
+            'url'             => $this->url,
+            'title'           => $this->title,
+            'link_attributes' => $this->linkAttributes->toArray(),
+            'attributes'      => $this->htmlAttributes->toArray(),
+        ];
+
+        return (object) $array;
     }
 
     public function addLinkAttribute(string $name, string $value)
